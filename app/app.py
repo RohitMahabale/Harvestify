@@ -78,26 +78,25 @@ crop_recommendation_model = pickle.load(
 
 
 def weather_fetch(city_name):
-    """
-    Fetch and returns the temperature and humidity of a city
-    :params: city_name
-    :return: temperature, humidity
-    """
-    api_key = config.weather_api_key
-    base_url = "http://api.openweathermap.org/data/2.5/weather?"
+    try:
+        api_key = config.weather_api_key
+        base_url = "http://api.openweathermap.org/data/2.5/weather?"
 
-    complete_url = base_url + "appid=" + api_key + "&q=" + city_name
-    response = requests.get(complete_url)
-    x = response.json()
+        complete_url = base_url + "appid=" + api_key + "&q=" + city_name
+        response = requests.get(complete_url)
+        x = response.json()
 
-    if x["cod"] != "404":
-        y = x["main"]
-
-        temperature = round((y["temp"] - 273.15), 2)
-        humidity = y["humidity"]
-        return temperature, humidity
-    else:
+        if x.get("cod") != "404" and "main" in x:
+            y = x["main"]
+            temperature = round((y["temp"] - 273.15), 2)
+            humidity = y["humidity"]
+            return temperature, humidity
+        else:
+            return None
+    except Exception as e:
+        print("Error fetching weather:", e)
         return None
+
 
 
 def predict_image(img, model=disease_model):
@@ -179,8 +178,13 @@ def crop_prediction():
         # state = request.form.get("stt")
         city = request.form.get("city")
 
-        if weather_fetch(city) != None:
-            temperature, humidity = weather_fetch(city)
+        #if weather_fetch(city) != None:
+         #   temperature, humidity = weather_fetch(city)
+        weather_data = weather_fetch(city)
+
+        if weather_data is not None:
+            temperature, humidity = weather_data
+
             data = np.array([[N, P, K, temperature, humidity, ph, rainfall]])
             my_prediction = crop_recommendation_model.predict(data)
             final_prediction = my_prediction[0]
